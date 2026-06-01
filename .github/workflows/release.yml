@@ -1,0 +1,111 @@
+name: Release Binaries
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.2"
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Android APK
+        run: flutter build apk --release --no-pub
+      - name: Prepare Android asset
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "meshcore-open-${{ github.event.release.tag_name }}-android.apk"
+      - name: Upload Android asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: meshcore-open-${{ github.event.release.tag_name }}-android.apk
+          overwrite_files: true
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.2"
+          cache: true
+      - name: Install Linux build deps
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Linux bundle
+        run: flutter build linux --release --no-pub
+      - name: Prepare Linux asset
+        run: |
+          tar -C build/linux/x64/release -czf \
+            "meshcore-open-${{ github.event.release.tag_name }}-linux-x64.tar.gz" \
+            bundle
+      - name: Upload Linux asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: meshcore-open-${{ github.event.release.tag_name }}-linux-x64.tar.gz
+          overwrite_files: true
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.2"
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build Windows bundle
+        run: flutter build windows --release --no-pub
+      - name: Prepare Windows asset
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* `
+            -DestinationPath "meshcore-open-${{ github.event.release.tag_name }}-windows-x64.zip"
+      - name: Upload Windows asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: meshcore-open-${{ github.event.release.tag_name }}-windows-x64.zip
+          overwrite_files: true
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.41.2"
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build macOS app
+        run: flutter build macos --release --no-pub
+      - name: Prepare macOS asset
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/macos/Build/Products/Release/meshcore_open.app \
+            "meshcore-open-${{ github.event.release.tag_name }}-macos.zip"
+      - name: Upload macOS asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: meshcore-open-${{ github.event.release.tag_name }}-macos.zip
+          overwrite_files: true
