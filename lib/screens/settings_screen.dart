@@ -1428,7 +1428,7 @@ class _RadioSettingsDialogState extends State<_RadioSettingsDialog> {
     final freqMHz = double.tryParse(_frequencyController.text);
     final txPower = int.tryParse(_txPowerController.text);
 
-    if (freqMHz == null || freqMHz < 300 || freqMHz > 2500) {
+    if (freqMHz == null) {
       showDismissibleSnackBar(
         context,
         content: Text(l10n.settings_frequencyInvalid),
@@ -1436,11 +1436,10 @@ class _RadioSettingsDialogState extends State<_RadioSettingsDialog> {
       return;
     }
 
-    final maxTxPower = widget.connector.maxTxPower ?? 22;
-    if (txPower == null || txPower < 0 || txPower > maxTxPower) {
+    if (txPower == null) {
       showDismissibleSnackBar(
         context,
-        content: Text('${l10n.settings_txPowerInvalid} (0-$maxTxPower dBm)'),
+        content: Text(l10n.settings_txPowerInvalid),
       );
       return;
     }
@@ -1456,17 +1455,6 @@ class _RadioSettingsDialogState extends State<_RadioSettingsDialog> {
     // if the client repeat isnt null then we know its supported
     //otherwise we leave it out of the frame to avoid accidentally enabling
     final knownRepeat = widget.connector.clientRepeat != null;
-
-    if (knownRepeat) {
-      const validRepeatFreqsKHz = {433000, 869000, 918000};
-      if (_clientRepeat && !validRepeatFreqsKHz.contains(freqHz)) {
-        showDismissibleSnackBar(
-          context,
-          content: Text(l10n.settings_clientRepeatFreqWarning),
-        );
-        return;
-      }
-    }
 
     try {
       _logRadioSettingsState('Saving radio settings');
